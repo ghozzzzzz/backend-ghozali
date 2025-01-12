@@ -7,8 +7,11 @@ const initDatabase = async () => {
     const connection = await mysql.createConnection({
       host: process.env.DB_HOST,
       user: process.env.DB_USER,
-      password: process.env.DB_PASSWORD
+      password: process.env.DB_PASSWORD,
+      port: process.env.DB_PORT || 3306
     });
+
+    console.log('Connected to MySQL server');
 
     // Buat database jika belum ada
     await connection.query(`CREATE DATABASE IF NOT EXISTS ${process.env.DB_NAME}`);
@@ -49,6 +52,7 @@ const initDatabase = async () => {
     `);
     console.log('Fire incidents table created or already exists');
 
+    // Buat tabel drought_incidents
     await connection.query(`
       CREATE TABLE IF NOT EXISTS drought_incidents (
         id INT PRIMARY KEY AUTO_INCREMENT,
@@ -69,38 +73,44 @@ const initDatabase = async () => {
       )
     `);
     console.log('Drought incidents table created or already exists');
-    
-    // Optional: Tambahkan data contoh
-    const [existingIncidents] = await connection.query('SELECT * FROM fire_incidents LIMIT 1');
-    if (existingIncidents.length === 0) {
-      await connection.query(`
-        INSERT INTO fire_incidents 
-        (province, district, fire_level, burned_area, affected_people, start_date, fire_type, description)
-        VALUES 
-        ('Kalimantan Timur', 'Kutai Kartanegara', 'Berat', 500.5, 1000, '2024-01-01', 'Hutan', 'Kebakaran hutan yang cukup parah'),
-        ('Riau', 'Pelalawan', 'Sedang', 300.2, 500, '2024-01-05', 'Lahan', 'Kebakaran lahan gambut'),
-        ('Sumatera Selatan', 'Ogan Ilir', 'Ringan', 150.0, 200, '2024-01-10', 'Pemukiman', 'Kebakaran di area pemukiman')
-      `);
-      console.log('Sample data inserted');
+
+    // Insert sample data hanya jika dalam mode development
+    if (process.env.NODE_ENV !== 'production') {
+      // Check if fire_incidents table is empty
+      const [existingFireIncidents] = await connection.query('SELECT * FROM fire_incidents LIMIT 1');
+      if (existingFireIncidents.length === 0) {
+        await connection.query(`
+          INSERT INTO fire_incidents
+          (province, district, fire_level, burned_area, affected_people, start_date, fire_type, description)
+          VALUES
+          ('Kalimantan Timur', 'Kutai Kartanegara', 'Berat', 500.5, 1000, '2024-01-01', 'Hutan', 'Kebakaran hutan yang cukup parah'),
+          ('Riau', 'Pelalawan', 'Sedang', 300.2, 500, '2024-01-05', 'Lahan', 'Kebakaran lahan gambut'),
+          ('Sumatera Selatan', 'Ogan Ilir', 'Ringan', 150.0, 200, '2024-01-10', 'Pemukiman', 'Kebakaran di area pemukiman')
+        `);
+        console.log('Sample fire incident data inserted');
+      }
+
+      // Check if drought_incidents table is empty
+      const [existingDroughtIncidents] = await connection.query('SELECT * FROM drought_incidents LIMIT 1');
+      if (existingDroughtIncidents.length === 0) {
+        await connection.query(`
+          INSERT INTO drought_incidents
+          (province, district, drought_level, affected_area, affected_people, start_date, land_type, water_source_impact, mitigation_efforts, description)
+          VALUES
+          ('Jawa Timur', 'Lamongan', 'Berat', 1200.5, 5000, '2024-01-01', 'Pertanian', 'Sumur mengering, sungai surut', 'Distribusi air bersih, pembuatan sumur bor', 'Kekeringan parah di area pertanian'),
+          ('Nusa Tenggara Timur', 'Kupang', 'Sedang', 800.2, 3000, '2024-01-05', 'Pemukiman', 'Krisis air bersih', 'Dropping air, pembangunan embung', 'Kekeringan di area pemukiman'),
+          ('Jawa Tengah', 'Grobogan', 'Ringan', 500.0, 1500, '2024-01-10', 'Perkebunan', 'Debit air berkurang', 'Pembagian jadwal pengairan', 'Kekeringan ringan area perkebunan')
+        `);
+        console.log('Sample drought incident data inserted');
+      }
     }
-    const [existingDrought] = await connection.query('SELECT * FROM drought_incidents LIMIT 1');
-    if (existingDrought.length === 0) {
-      await connection.query(`
-        INSERT INTO drought_incidents 
-        (province, district, drought_level, affected_area, affected_people, start_date, land_type, water_source_impact, mitigation_efforts, description)
-        VALUES
-        ('Jawa Timur', 'Lamongan', 'Berat', 1200.5, 5000, '2024-01-01', 'Pertanian', 'Sumur mengering, sungai surut', 'Distribusi air bersih, pembuatan sumur bor', 'Kekeringan parah di area pertanian'),
-        ('Nusa Tenggara Timur', 'Kupang', 'Sedang', 800.2, 3000, '2024-01-05', 'Pemukiman', 'Krisis air bersih', 'Dropping air, pembangunan embung', 'Kekeringan di area pemukiman'),
-        ('Jawa Tengah', 'Grobogan', 'Ringan', 500.0, 1500, '2024-01-10', 'Perkebunan', 'Debit air berkurang', 'Pembagian jadwal pengairan', 'Kekeringan ringan area perkebunan')
-      `);
-      console.log('Sample drought data inserted');
-    }
-    
+
     await connection.end();
-    console.log('Database initialization completed');
+    console.log('Database initialization completed successfully');
+    
   } catch (error) {
     console.error('Error initializing database:', error);
-    process.exit(1);
+    throw error; // Re-throw error untuk ditangkap di server.js
   }
 };
 

@@ -5,7 +5,8 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "setup": "node database/init.js"
+    "setup": "node database/init.js",
+    "production": "NODE_ENV=production node server.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -17,5 +18,8 @@
   },
   "devDependencies": {
     "nodemon": "^2.0.20"
+  },
+  "engines": {
+    "node": ">=14.0.0"
   }
 }

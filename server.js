@@ -2,16 +2,18 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const initDatabase = require('./database/init');
+const corsConfig = require('./config/corsConfig');
 
 const app = express();
 
 // Init Middleware
 app.use(express.json());
-app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:3000'],
-  credentials: true
-}));
+app.use(cors(corsConfig));
 
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'OK', environment: process.env.NODE_ENV });
+});
 
 // Define Routes
 app.use('/api/auth', require('./routes/auth'));
@@ -29,6 +31,8 @@ const startServer = async () => {
     // Jalankan server
     app.listen(PORT, () => {
       console.log(`Server is running on port ${PORT}`);
+      console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+      console.log(`CORS enabled for: ${corsConfig.origin}`);
     });
   } catch (error) {
     console.error('Failed to start server:', error);
