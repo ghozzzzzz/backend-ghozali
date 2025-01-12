@@ -6,7 +6,10 @@ const corsConfig = {
       allowedHeaders: ['Content-Type', 'Authorization']
     },
     production: {
-      origin: ['https://frontend-ghozali.vercel.app'],
+      origin: [
+        'https://frontend-ghozali.vercel.app',
+        process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : null
+      ].filter(Boolean),
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization']
